@@ -43,6 +43,10 @@ options.add_argument("--disable-extensions")
 # Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
+# In-memory state variables
+stable_ipos = set()
+unstable_ipos = set()
+
 # Function to check if the URL is accessible
 def is_url_accessible(url):
     try:
@@ -61,11 +65,16 @@ def load_previous_state():
     filename = 'logs/ipo_state.json'
     if os.path.exists(filename):
         with open(filename, 'r') as file:
-            return json.load(file)
+            state = json.load(file)
+            global stable_ipos, unstable_ipos
+            stable_ipos = set(state["stable_ipos"])
+            unstable_ipos = set(state["unstable_ipos"])
+            return state
     return {"stable_ipos": [], "unstable_ipos": []}
 
 # Function to save the current state to a JSON file
-def save_current_state(state):
+def save_current_state():
+    state = {"stable_ipos": list(stable_ipos), "unstable_ipos": list(unstable_ipos)}
     filename = 'logs/ipo_state.json'
     with open(filename, 'w') as file:
         json.dump(state, file)
@@ -126,9 +135,7 @@ try:
         pygame.mixer.music.play()  # Play the beep sound
         time.sleep(15)  # Initial wait for 15 seconds
 
-        state = load_previous_state()
-        stable_ipos = set(state["stable_ipos"])
-        unstable_ipos = set(state["unstable_ipos"])
+        load_previous_state()
         ipo_stability_counter = {ipo: 0 for ipo in unstable_ipos}
         stable_state_threshold = 5  # Number of consecutive checks for stable state
 
@@ -166,8 +173,7 @@ try:
 
             # Update the state
             unstable_ipos = {ipo for ipo in new_unstable_ipos if ipo not in stable_ipos}
-            state = {"stable_ipos": list(stable_ipos), "unstable_ipos": list(unstable_ipos)}
-            save_current_state(state)
+            save_current_state()
 
             # Log the stable state counter
             ipo_logger.info(f"Stable IPOs: {', '.join(stable_ipos)}")
