@@ -10,6 +10,8 @@ from plyer import notification  # For notifications
 import pygame  # For playing sound
 import time
 import requests
+from flask import Flask, jsonify, render_template
+import threading
 
 # Set up logging for WebDriver manager
 if not os.path.exists('logs'):
@@ -111,91 +113,128 @@ def check_ipo_options():
         print("The website may be broken")
         return []
 
-# Main loop
-try:
-    url = "https://linkintime.co.in/initial_offer/"
-    if is_url_accessible(url):
-        initial_message = "Script started. Waiting 15 seconds before checking for IPOs..."
-        notification.notify(
-            title="IPO Notification",
-            message=initial_message,
-            timeout=10
-        )
-        log_notification('Script Start', 'initial')
-        pygame.mixer.music.load('sound/beep.mp3')  # Load the beep sound
-        pygame.mixer.music.play()  # Play the beep sound
-        time.sleep(15)  # Initial wait for 15 seconds
+# Flask web server setup
+app = Flask(__name__)
 
-        state = load_previous_state()
-        stable_ipos = set(state["stable_ipos"])
-        unstable_ipos = set(state["unstable_ipos"])
-        ipo_stability_counter = {ipo: 0 for ipo in unstable_ipos}
-        stable_state_threshold = 2  # Number of consecutive checks for stable state
+# Function to load the current state from a JSON file for the web server
+def load_current_state():
+    filename = 'logs/ipo_state.json'
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            return json.load(file)
+    return {"stable_ipos": [], "unstable_ipos": []}
 
-        # Notify for existing stable IPOs when the script starts
-        if stable_ipos:
-            existing_message = f"Active Stable IPO(s) found:\n{', '.join(stable_ipos)}. Checking for more..."
+@app.route('/')
+def index():
+    state = load_current_state()
+    return render_template('index.html', stable_ipos=state["stable_ipos"], unstable_ipos=state["unstable_ipos"])
+
+@app.route('/api/ipos')
+def get_ipos():
+    state = load_current_state()
+    return jsonify(state)
+
+# Function to run the Flask web server
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
+# Function to run the IPO notification script
+def run_ipo_notify():
+    try:
+        url = "https://linkintime.co.in/initial_offer/"
+        if is_url_accessible(url):
+            initial_message = "Script started. Waiting 15 seconds before checking for IPOs..."
             notification.notify(
                 title="IPO Notification",
-                message=existing_message,
-                timeout=15
+                message=initial_message,
+                timeout=10
             )
-            ipo_logger.info(existing_message)
-            log_notification('Active Stable IPOs', 'existing')
+            log_notification('Script Start', 'initial')
             pygame.mixer.music.load('sound/beep.mp3')  # Load the beep sound
-            pygame.mixer.music.play()  # Play the beep sound for active IPOs
+            pygame.mixer.music.play()  # Play the beep sound
+            time.sleep(15)  # Initial wait for 15 seconds
 
-        while True:
-            current_ipo_names = check_ipo_options()
+            state = load_previous_state()
+            stable_ipos = set(state["stable_ipos"])
+            unstable_ipos = set(state["unstable_ipos"])
+            ipo_stability_counter = {ipo: 0 for ipo in unstable_ipos}
+            stable_state_threshold = 5  # Number of consecutive checks for stable state
 
-            # Update stability counters and classify IPOs
-            new_stable_ipos = set()
-            new_unstable_ipos = set()
-            for ipo in current_ipo_names:
-                if ipo in ipo_stability_counter:
-                    ipo_stability_counter[ipo] += 1
-                else:
-                    ipo_stability_counter[ipo] = 1
-
-                if ipo_stability_counter[ipo] >= stable_state_threshold:
-                    if ipo not in stable_ipos:
-                        new_stable_ipos.add(ipo)
-                    stable_ipos.add(ipo)
-                else:
-                    new_unstable_ipos.add(ipo)
-
-            # Update the state
-            unstable_ipos = {ipo for ipo in new_unstable_ipos if ipo not in stable_ipos}
-            state = {"stable_ipos": list(stable_ipos), "unstable_ipos": list(unstable_ipos)}
-            save_current_state(state)
-
-            # Log the stable state counter
-            ipo_logger.info(f"Stable IPOs: {', '.join(stable_ipos)}")
-            ipo_logger.info(f"Unstable IPOs: {', '.join(unstable_ipos)}")
-            print(f"Stable IPOs: {', '.join(stable_ipos)}")
-            print(f"Unstable IPOs: {', '.join(unstable_ipos)}")
-
-            if new_stable_ipos:  # Only notify if there are new stable IPOs
-                notification_message = f"New Stable IPO(s) added:\n{', '.join(new_stable_ipos)}"
+            # Notify for existing stable IPOs when the script starts
+            if stable_ipos:
+                existing_message = f"Active Stable IPO(s) found:\n{', '.join(stable_ipos)}. Checking for more..."
                 notification.notify(
                     title="IPO Notification",
-                    message=notification_message,
-                    timeout=10
+                    message=existing_message,
+                    timeout=15
                 )
+                ipo_logger.info(existing_message)
+                log_notification('Active Stable IPOs', 'existing')
                 pygame.mixer.music.load('sound/beep.mp3')  # Load the beep sound
-                pygame.mixer.music.play()  # Play the beep sound
-                ipo_logger.info(notification_message)
-                log_notification(' | '.join(new_stable_ipos), 'new')  # Log new IPO notification
+                pygame.mixer.music.play()  # Play the beep sound for active IPOs
 
-            ipo_logger.info("Next refresh in 15 seconds...")
-            print("Next refresh in 15 seconds...")
-            time.sleep(15)  # Refresh every 15 seconds
-    else:
-        ipo_logger.error("URL is not accessible. Exiting...")
-        print("URL is not accessible. Exiting...")
-except KeyboardInterrupt:
-    ipo_logger.info("Process interrupted manually.")
-    print("Process interrupted manually.")
-finally:
-    driver.quit()
-    ipo_logger.info("Driver quit.")
+            while True:
+                current_ipo_names = check_ipo_options()
+
+                # Update stability counters and classify IPOs
+                new_stable_ipos = set()
+                new_unstable_ipos = set()
+                for ipo in current_ipo_names:
+                    if ipo in ipo_stability_counter:
+                        ipo_stability_counter[ipo] += 1
+                    else:
+                        ipo_stability_counter[ipo] = 1
+
+                    if ipo_stability_counter[ipo] >= stable_state_threshold:
+                        if ipo not in stable_ipos:
+                            new_stable_ipos.add(ipo)
+                        stable_ipos.add(ipo)
+                    else:
+                        new_unstable_ipos.add(ipo)
+
+                # Update the state
+                unstable_ipos = {ipo for ipo in new_unstable_ipos if ipo not in stable_ipos}
+                state = {"stable_ipos": list(stable_ipos), "unstable_ipos": list(unstable_ipos)}
+                save_current_state(state)
+
+                # Log the stable state counter
+                ipo_logger.info(f"Stable IPOs: {', '.join(stable_ipos)}")
+                ipo_logger.info(f"Unstable IPOs: {', '.join(unstable_ipos)}")
+                print(f"Stable IPOs: {', '.join(stable_ipos)}")
+                print(f"Unstable IPOs: {', '.join(unstable_ipos)}")
+
+                if new_stable_ipos:  # Only notify if there are new stable IPOs
+                    notification_message = f"New Stable IPO(s) added:\n{', '.join(new_stable_ipos)}"
+                    notification.notify(
+                        title="IPO Notification",
+                        message=notification_message,
+                        timeout=10
+                    )
+                    pygame.mixer.music.load('sound/beep.mp3')  # Load the beep sound
+                    pygame.mixer.music.play()  # Play the beep sound
+                    ipo_logger.info(notification_message)
+                    log_notification(' | '.join(new_stable_ipos), 'new')  # Log new IPO notification
+
+                ipo_logger.info("Next refresh in 15 seconds...")
+                print("Next refresh in 15 seconds...")
+                time.sleep(15)  # Refresh every 15 seconds
+        else:
+            ipo_logger.error("URL is not accessible. Exiting...")
+            print("URL is not accessible. Exiting...")
+    except KeyboardInterrupt:
+        ipo_logger.info("Process interrupted manually.")
+        print("Process interrupted manually.")
+    finally:
+        driver.quit()
+        ipo_logger.info("Driver quit.")
+
+# Run the Flask web server and IPO notification script in parallel
+if __name__ == '__main__':
+    flask_thread = threading.Thread(target=run_flask)
+    ipo_notify_thread = threading.Thread(target=run_ipo_notify)
+
+    flask_thread.start()
+    ipo_notify_thread.start()
+
+    flask_thread.join()
+    ipo_notify_thread.join()

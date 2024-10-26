@@ -4,4 +4,3 @@ plyer
 requests
 pygame
 flask
-gunicorn
