@@ -3,3 +3,5 @@ webdriver-manager
 plyer
 requests
 pygame
+flask
+gunicorn
