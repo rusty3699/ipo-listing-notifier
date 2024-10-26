@@ -1,4 +1,4 @@
-# IPO Monitoring Script
+# IPO Listing Monitoring Script
 This project automates monitoring IPO listings on [Link Intime](https://linkintime.co.in/initial_offer/). It tracks IPO stability and notifies users when new stable IPOs are detected.
 
 ## Features
@@ -33,7 +33,7 @@ pip install selenium plyer pygame webdriver_manager
 
 Clone the repository:
 ```bash
-git clone <repo_url>
+git clone https://github.com/rusty3699/ipo-listing-notifier
 cd ipo-monitoring
 ```
 
@@ -81,6 +81,12 @@ Logging includes:
 - **Dynamic Stability Threshold**: Customize threshold per IPO.
 - **Support for Additional Sites**: Adapt script for other IPO listing websites.
 - **GUI**: Develop a GUI for IPO management.
+- **Pancard Check**: Automate with a PAN card check for IPO applications.
+
+## Issues
+1. If the elements for website change, the script will not work.
+2. The script is under testing. Please use it at your own risk.
+3. Using a heavy library -Pygame for sound alert. Need to find a lightweight alternative. 
 
 ## Contributing
 
@@ -89,3 +95,4 @@ Logging includes:
 3. Commit changes (`git commit -m 'Add AmazingFeature'`).
 4. Push to the branch (`git push origin feature/AmazingFeature`).
 5. Open a pull request.
+
