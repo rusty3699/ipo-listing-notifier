@@ -82,6 +82,7 @@ Logging includes:
 - **Support for Additional Sites**: Adapt script for other IPO listing websites.
 - **GUI**: Develop a GUI for IPO management.
 - **Pancard Check**: Automate with a PAN card check for IPO applications.
+- **Website**: Thinking of adding Flask webpage to display stable listing of IPOs - for those who don't want to run the script.
 
 ## Issues
 1. If the elements for website change, the script will not work.
