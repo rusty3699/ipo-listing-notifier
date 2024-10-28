@@ -92,8 +92,8 @@ Logging includes:
 ## Contributing
 
 1. Fork the project.
-2. Create a branch (`git checkout -b feature/AmazingFeature`).
-3. Commit changes (`git commit -m 'Add AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
+2. Create a branch (`git checkout -b feature/something`).
+3. Commit changes (`git commit -m 'Add somethhing'`).
+4. Push to the branch (`git push origin feature/something`).
 5. Open a pull request.
 
