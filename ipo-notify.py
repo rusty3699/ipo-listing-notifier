@@ -15,11 +15,11 @@ import requests
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
-logging.basicConfig(
-    filename='logs/webdriver_manager.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+webdriver_logger = logging.getLogger('webdriver_manager')
+webdriver_logger.setLevel(logging.INFO)
+webdriver_handler = logging.FileHandler('logs/webdriver_manager.log')
+webdriver_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+webdriver_logger.addHandler(webdriver_handler)
 
 # Set up logging for IPO notifications
 ipo_logger = logging.getLogger('ipo_logger')
