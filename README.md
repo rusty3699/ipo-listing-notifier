@@ -1,6 +1,11 @@
 # IPO Listing Monitoring Script
 This project automates monitoring IPO listings on [Link Intime](https://linkintime.co.in/initial_offer/). It tracks IPO stability and notifies users when new stable IPOs are detected.
 
+## Why I Made This Project
+
+We keep on checking the website multiple times, keep refreshing - the IPO can be seen and it disappears. The website shows it again and it disappears, no stability at all! This project aims to automate this tedious process by providing real-time monitoring and notifications. Just run the script, and you will get complete logs along with desktop notifications. For non-developers, I am planning to make a small website that shows the status of IPOs.
+
+
 ## Features
 
 - **Automated IPO Check**: The script checks the IPO listing page every 15 seconds.
